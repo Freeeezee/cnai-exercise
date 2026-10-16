@@ -72,3 +72,43 @@ Englisch   49 Tokens für 21 Wörter
 Deutsch braucht 19 Tokens mehr (+39%).
 
 → Der Unterschied wird größer. Tokenization ist generell eher abhängig von der Zeichenanzahl als der Anzahl der Wörter.
+
+## 4
+
+### 4-1
+
+qwen2.5:0.5b hat **4** richtig eingeordnet, llama3.2:3b hat **8** richtig erkannt.
+
+### 4-2
+
+| Model        | Anliegen Falsch | Studiengang Falsch | Frist Falsch |
+| ------------ | --------------- | ------------------ | ------------ |
+| llama3.2:3b  | 0               | 2                  | 4            |
+| qwen2.5:0.5b | 4               | 4                  | 5            |
+
+Bei den gemeldeten Fehlern ist das Anliegen falsch, allerdings ist bei den gleichen oder auch anderen Antworten mit richtigem Anliegen oft die Frist oder der Studiengang falsch.
+
+### 4-3
+
+Das Schema überprüft nur das Antwortformat. Und da weder `studiengang` noch `frist` ein standartisiertes Format haben, sondern beliebige *Strings* oder *null* sein dürfen ist das Schema erfüllt, auch wenn der Inhalt nicht korrekt oder null ist.
+
+### 4-4
+
+Beide Modelle sind zwar verwirrt und geben unlogische Antworten aus, das Schema behalten Sie aber bei und versuchen weiterhin die E-Mails einzuordnen, es klappt also nicht, das Modell seinen System-Prompt damit vergessen zu lassen.
+
+### 4-5
+
+Auch wenn Sie weiterhin versuchen Json auszugeben, halten sich die Modelle nicht mehr ans vorgegebene Schema, und die Antworten können nicht mehr in das vorgegebene Objekt umgewandelt werden, weshalb die Einordnung misslingt. Temperature 0 macht das ganze nur schwieriger, da auch erneute Versuche den gleichen Output produzieren und ebenfalls nicht gelesen werden können.
+
+Mit einem besseren/ausführlicheren System prompt mit dem genauen Schema lässt sich das Problem allerdings eindämmen:
+
+```
+SYSTEM_PROMPT = (
+    "Du ordnest Mails von Studierenden an die HTWG Konstanz ein. "
+    "Antworte ausschließlich mit JSON der Form {anliegen: pruefung | mensa | bibliothek | sonstiges, studiengang: string | null, frist: string | null}. "
+    "anliegen ist pruefung, mensa, bibliothek oder sonstiges. "
+    "studiengang ist das Kürzel (z. B. AIN, WIN, MSI) oder null. "
+    "frist ist die Frist aus der Mail, so wie sie dort steht, oder null."
+)
+```
+
