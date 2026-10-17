@@ -112,3 +112,12 @@ SYSTEM_PROMPT = (
 )
 ```
 
+## Zusatz
+
+### Zusatz-3
+
+*Wie viele der acht Mails haben vorher und nachher **alle drei Felder** richtig?*
+
+qwen2.5:0.5b hat vor den Änderungen **0** komplett richtig, danach **1**. 
+
+llama3.2:3b hat vor den Änderungen **3** komplett richtig, danach **4**.
