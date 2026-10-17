@@ -13,9 +13,9 @@ Eure Aufgaben stehen bei den TODO-Kommentaren.
 
 import json
 import sys
-from typing import Literal
+from typing import Literal, Annotated
 
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel, ValidationError, AfterValidator
 
 from llm import MODEL, client
 
@@ -27,11 +27,26 @@ SYSTEM_PROMPT = (
     "frist ist die Frist aus der Mail, so wie sie dort steht, oder null."
 )
 
+STUDIENGAENGE = {"AIN", "WIN", "MSI", "GIB"}
+
+def validate_studiengang(text: str) -> str | None:
+    if text is not None and text.upper() in STUDIENGAENGE:
+        return text.upper()
+    else:
+        return None
+
+
+def validate_frist(text: str) -> str | None:
+    if text == "null" or text == "" or text == "None":
+        return None
+    else:
+        return text
+
 
 class Anfrage(BaseModel):
     anliegen: Literal["pruefung", "mensa", "bibliothek", "sonstiges"]
-    studiengang: str | None
-    frist: str | None
+    studiengang: Annotated[str | None, AfterValidator(validate_studiengang)]
+    frist: Annotated[str | None, AfterValidator(validate_frist)]
 
 
 def schema_von(modell: type[BaseModel]) -> dict:
@@ -56,7 +71,13 @@ def einordnen(mail: str, versuche: int = 3) -> Anfrage:
         try:
             rohantwort = (client.chat.completions.create(model=MODEL, messages=nachricht, response_format=schema_von(Anfrage)).choices[0].message.content or "").strip()
             #print(rohantwort)
-            return Anfrage.model_validate_json(rohantwort)
+            validiert = Anfrage.model_validate_json(rohantwort)
+
+            if validiert.frist is not None and validiert.frist not in mail:
+                print("Warnung: Erkannte Frist icht in Mail gefunden.")
+                validiert.frist = None
+
+            return validiert
         except ValidationError:
             print("Einordnung fehlgeschlagen. Versuche es erneut...")
             pass
