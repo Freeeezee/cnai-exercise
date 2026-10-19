@@ -121,3 +121,11 @@ SYSTEM_PROMPT = (
 qwen2.5:0.5b hat vor den Änderungen **0** komplett richtig, danach **1**. 
 
 llama3.2:3b hat vor den Änderungen **3** komplett richtig, danach **4**.
+
+## Reflexion
+
+### 1.
+
+*Warum steht das Modell in `.env` und nicht im Code?*
+
+Ermöglicht es, das Modell über Environment Variablen von außen zu überschreiben, und ist logisch
