@@ -128,4 +128,31 @@ llama3.2:3b hat vor den Änderungen **3** komplett richtig, danach **4**.
 
 *Warum steht das Modell in `.env` und nicht im Code?*
 
-Ermöglicht es, das Modell über Environment Variablen von außen zu überschreiben, und ist logisch
+Ermöglicht es, das Modell über Environment Variablen von außen zu überschreiben, und ist logisch am nächsten an der LLM API config.
+
+### 2.
+
+*Welche Temperature habt ihr in `einordnen.py` gewählt, und warum?*
+
+Die Standardtemperatur. Klassischerweise $0.8$, kann aber bei bestimmten Modellen abweichen. Wichtig ist, dass die Temperatur nicht nahe 0 ist, damit neue Versuche einen Effekt haben können. Zu hohe Werte wären auch nicht gut, da die Ergebnisse dadurch zu sehr abweichen würden. Daher der Default-Wert, der eine gute Balance schaffen sollte.
+
+### 3.
+
+*Was garantiert `response_format` mit Schema, und was nicht?*
+
+Es garantiert das Schema, in dem die Antworten ausgegeben werden, aber nicht ob die Antworten sinnvoll sind.
+
+#### 4. 
+
+*Wann würdet ihr ein lokales Modell, wann einen Cloud-Dienst wählen? Nennt je zwei Gründe.*
+
+#### Lokal:
+
+- Kosten – Lokale Modelle sind beim Testen praktisch gratis, und können später in der Produktion theoretisch deutlich günstiger und individueller betrieben werden, allein schon weil kein Inference-Provider auch daran verdienen möchte.
+- Datenschutz – Lokale Modelle sind im Datenschutz unschlagbar, da sensible Daten niemals das eigene System verlassen.
+
+#### Cloud:
+
+- Leistung – Die stärksten Modelle sind proprietär und lokal überhaupt nicht verfügbar. Zudem benötigen die stärksten Modelle sehr teure Technik um sie effizient laufen zu lassen, weshalb viele Anwender weniger leistungsstarke Modelle verwenden müssen.
+- Einfachheit – Modelle selbst zur Verfügung zu stellen erzeugt einen hohen organisatorischen Aufwand, der sich für kleinere Betriebe oft nicht lohnt. Außerdem gehen Kosteneinsparungen durch lokale Modelle schnell verloren, wenn die Hardware nicht voll ausgelastet ist, und theoretisch Leistung "verschwendet". 
+  Cloud Provider übernehmen das Management und diesen Kostenfaktor und machen daraus einen Prozess von wenigen clicks.
