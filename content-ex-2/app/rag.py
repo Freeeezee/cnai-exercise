@@ -14,7 +14,7 @@ die Abschnitte, deren Vektoren der Frage am ähnlichsten sind.
 
 import argparse
 import os
-import re  # für TODO 4b, z. B. re.split
+import re
 import time
 
 from qdrant_client import QdrantClient
@@ -39,18 +39,17 @@ qdrant = QdrantClient(url=QDRANT_URL)
 
 def zerlege(datei: str, text: str) -> list[Treffer]:
     """Zerlegt ein Dokument in Abschnitte (Chunks).
-
-    Im Moment ist jedes Dokument genau ein Abschnitt. Das läuft, aber ein
-    Abschnitt über drei Themen bekommt einen Vektor, der zu keinem der
-    Themen richtig passt.
     """
-    # TODO 4b (Teil 4.3): Zerlegt sinnvoller, zum Beispiel so:
-    #   - Ein Abschnitt beginnt bei jeder Zwischenüberschrift "## ".
-    #   - Dokumente ohne Zwischenüberschrift teilt ihr an Leerzeilen in Absätze.
-    #   - Stellt jedem Abschnitt den Titel des Dokuments voran (erste Zeile,
-    #     beginnt mit "# "), damit er auch allein verständlich bleibt.
-    # Danach den Index neu bauen: rag.py --index
-    return [Treffer(datei, text.strip())]
+    titel, _, inhalt = text.strip().partition("\n")
+
+    if not titel.startswith("# "):
+        titel, inhalt = "", text.strip()
+    if re.search(r"^## ", inhalt, flags=re.MULTILINE):
+        teile = re.split(r"^(?=## )", inhalt, flags=re.MULTILINE)
+    else:
+        teile = re.split(r"\n\s*\n", inhalt)
+
+    return [Treffer(datei, f"{titel}\n{t.strip()}".strip()) for t in teile if t.strip()]
 
 
 def einbetten(texte: list[str]) -> list[list[float]]:

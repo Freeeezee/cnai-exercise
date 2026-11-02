@@ -21,12 +21,12 @@ GUARDRAIL_AN = True
 
 def ausgabe_pruefen(text: str) -> str:
     """Guardrail am Ausgang: läuft nach dem Modell, im Code.
-
-    TODO 3 (Teil 3): Prüft hier die Antwort, bevor sie an die
-    Studierenden geht. Enthält sie etwas, das nie hinausgehen darf,
-    ersetzt ihr sie durch eine feste, freundliche Absage.
-    Im Moment wird alles unverändert durchgereicht.
     """
+    iterator = iter(text)
+
+    if all(character in iterator for character in "8352"):
+        return "Tut mir leid, diese Anfrage enthält Teile, die ich nicht beantworten kann."
+
     return text
 
 

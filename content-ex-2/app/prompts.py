@@ -26,6 +26,7 @@ class Prompt(BaseModel):
     temperature: float = 0.0
     system: str
     user: str = PLATZHALTER
+    system_post: str | None = None
 
     @property
     def kennung(self) -> str:
@@ -38,10 +39,13 @@ class Prompt(BaseModel):
         kein str.format: Prompts enthalten oft JSON mit geschweiften
         Klammern, die format() als Platzhalter missverstehen würde.
         """
-        return [
+        nachrichten = [
             {"role": "system", "content": self.system.replace(PLATZHALTER, eingabe)},
             {"role": "user", "content": self.user.replace(PLATZHALTER, eingabe)},
         ]
+        if self.system_post:
+            nachrichten.append({"role": "system", "content": self.system_post})
+        return nachrichten
 
 
 def lade(pfad: str | Path) -> Prompt:
