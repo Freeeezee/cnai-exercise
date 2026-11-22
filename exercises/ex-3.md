@@ -176,3 +176,40 @@ workflow                         1/4         1/1         0/4         0/1        
 - MCP Fehlertoleranz erzielt bei `llama3.2:3b` nur eine leichte Verbesserung bei der Workflow Lösung, `qwen2.5:3b` profitiert bei beiden Agent Prompts. 
 - Der Workflow kann gut sagen, wenn ihm das Wissen fehlt, und beantwortet Fragen, die im Vorhinein erwartet wurden, und einen klaren Ablauf haben am besten. Das kann aber auch dazu führen, dass Fragen, auf die er eine Antwort hat, die allerdings keinen weiteren Kontext benötigt (wie zb. "Wie viel ist 17 mal 23?") abgelehnt werden, da die Information über den Mangel an Kontext überwiegt. Außerdem können Nuancen verloren gehen, da durch die strikte Kategorisierung am Anfang falsche Tool-Aufrufe gemacht werden, obwohl das Modell alles richtig eingeschätzt hat ("Hat die Mensa am Samstag offen?" → ruft `mensa_speiseplan` auf, da es als `mensa` kategorisiert wurde, obwohl die Antwort da nicht zu finden ist).
 - Insgesamt scheint `llama3.2:3b` aber vom strikten Workflow zu profitieren, `qwen2.5:3b` schadet er eher.
+
+## 4
+
+### 4-1
+
+#### 4-1-1
+
+Zuerst kommt der System prompt mit der Rolle `system`, dann der User mit `user`. Tool calls und Antwortenhaben die Rolle `assistant` und die Antworten der Tools die Rolle `tool`. Der System Prompt steht nur am Anfang, ab dann folgt die Konveration dem Schema `user` → beliebige Anzahl `assistant` tool calls, die mit `tool` beantwortet werden → `assistant` antwort → `user`.
+
+Tools werden immer mit einer ID aufgerufen, die auch in der Tool Antwort steht. Damit können Sie zueinander zugeordnet werden.
+
+#### 4-1-2
+
+```
+  ? Soll ich raum_buchen(raum='O-108', datum='2026-11-05', uhrzeit='09:45', name='Studierender') ausführen? [j/N] N
+  → raum_buchen(raum='O-108', datum='2026-11-05', uhrzeit='09:45', name='Studierender')  [abgelehnt]
+  ← Abgelehnt.
+
+Dazu habe ich keine Information.
+```
+
+→ Der Agent versucht diese unvollständige Frage zu interpretieren, kann aber nur raten, welchen Raum der Fragesteller meint, welches Datum, welchen Namen er hat und was er eigentlich erreichen will. Es fehlt die vorangegangene Frage. Stattdessen nimmt das Modell einfach die Beispielwerte aus der Toolbeschreibung.
+
+#### 4-1-3
+
+Frage 1: 1642 Eingabe-Tokens gesamt.
+Frage 2: 3560 Eingabe-Tokens gesamt.
+
+→ Mehr als die Doppelte Menge Eingabe Tokens, da bei der zweiten Frage auch die gesamte Historie mitgesendet wird. 
+
+Mit Fenster hat Frage 2 3221 Eingabe-Tokens, versucht aber auch den Raum zu buchen, wie der Agent ohne Historie zuvor. 
+
+→ Die vorangegangene Frage wurde abgeschnitten. Es wird immer bei der Nachricht einer Person abgeschnitten, da die Konversation andernfalls mit einem Tool-Call oder dessen Resultat beginnen würde, was das Modell verwirren könnte.
+
+#### 4-1-4
+
+Direkt nachdem der Schritt gemacht wurde, und bevor er ausgegeben wird, damit die Ausgabe immer nur sicher gespeicherten Output anzeigt. Zwischen jedem Schritt damit möglichst wenig verloren geht. Das Schlimmste was hier passieren könnte wäre ein crash nach einem Tool-Call, bevor gespeichert wurde, da dann der Tool-Call erneut ausgeführt wird, was bei destruktiven Operationen problematisch sein kann. 

@@ -174,14 +174,10 @@ def ausfuehren(sitzung: Sitzung, werkzeuge: list[Werkzeug], max_schritte: int = 
             break
         n = len(sitzung.schritte)
         schritt(sitzung, werkzeuge, fenster, temperature)
+        speichern(sitzung)
         if zeigen:
             for s in sitzung.schritte[n:]:
                 zeige_schritt(Schritt(**s))
-
-        # TODO 4a (Teil 2): nach jedem Übergang einen Checkpoint schreiben
-        #
-        # Eine Zeile. Wo genau sie steht, entscheidet, wie viel Arbeit bei
-        # einem Absturz verloren geht.
 
     speichern(sitzung)
     return sitzung
@@ -228,11 +224,11 @@ if __name__ == "__main__":
     parser.add_argument("--fenster", type=int, default=MAX_NACHRICHTEN, help="Kurzzeit-Fenster in Nachrichten")
     args = parser.parse_args()
 
-    # TODO 4a (Teil 3): eine vorhandene Sitzung laden, sonst eine neue anlegen
-    #
     # Im Moment beginnt jeder Aufruf bei null. Nutzt laden(args.sitzung) und
     # legt nur dann eine neue Sitzung an, wenn es noch keine gibt.
-    sitzung = Sitzung(id=args.sitzung)
+
+    if (sitzung := laden(args.sitzung)) is None:
+        sitzung = Sitzung(id=args.sitzung, status="laeuft")
 
     if args.verlauf:
         zeige_verlauf(sitzung)
