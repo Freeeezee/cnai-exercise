@@ -77,8 +77,6 @@ def werkzeug_ausfuehren(aufruf, verzeichnis: dict[str, Werkzeug], bestaetigen=fr
 
     werkzeug = verzeichnis[name]
 
-    # TODO 3b: Schreibende Werkzeuge nur nach Bestätigung ausführen
-    #
     # Ist werkzeug.schreibend gesetzt, fragt zuerst bestaetigen(werkzeug, argumente).
     # Sagt die Person nein, führt das Werkzeug NICHT aus und gebt einen Schritt
     # mit fehler="abgelehnt" und einer klaren Nachricht an das Modell zurück.

@@ -115,14 +115,17 @@ def aufruf_bearbeiten(sitzung: Sitzung, aufruf: dict, verzeichnis: dict[str, Wer
     """Führt einen Werkzeugaufruf aus, oder unterbricht vor einem schreibenden."""
     werkzeug = verzeichnis.get(aufruf["function"]["name"])
 
-    # TODO 4b: Unterbrechung vor schreibenden Werkzeugen
-    #
     # Im Moment fragt werkzeug_ausfuehren() wie in Teil 2 im Terminal nach und
     # blockiert, bis jemand tippt. Ändert das: Ist das Werkzeug schreibend,
     # führt es NICHT aus, sondern setzt sitzung.status auf
     # "wartet_auf_bestaetigung", merkt euch den Aufruf in sitzung.offene_aktion
     # und gebt die Sitzung zurück. ausfuehren() hört dann auf, der Checkpoint
     # ist geschrieben, das Programm endet. Weiter geht es mit entscheiden().
+
+    if werkzeug and werkzeug.schreibend:
+        sitzung.status = "wartet_auf_bestaetigung"
+        sitzung.offene_aktion = aufruf
+        return sitzung
 
     schritt = werkzeug_ausfuehren(als_aufruf(aufruf), verzeichnis, bestaetigen=fragen)
     ergebnis_anhaengen(sitzung, aufruf["id"], schritt)

@@ -213,3 +213,44 @@ Mit Fenster hat Frage 2 3221 Eingabe-Tokens, versucht aber auch den Raum zu buch
 #### 4-1-4
 
 Direkt nachdem der Schritt gemacht wurde, und bevor er ausgegeben wird, damit die Ausgabe immer nur sicher gespeicherten Output anzeigt. Zwischen jedem Schritt damit möglichst wenig verloren geht. Das Schlimmste was hier passieren könnte wäre ein crash nach einem Tool-Call, bevor gespeichert wurde, da dann der Tool-Call erneut ausgeführt wird, was bei destruktiven Operationen problematisch sein kann. 
+
+### 4-2
+
+#### 4-2-1
+
+```json
+"status": "wartet_auf_bestaetigung",
+"offene_aktion": {
+  "id": "call_w5ou058i",
+  "function": {
+    "arguments": "{\"uhrzeit\":\"14:00\",\"name\":\"Kim\",\"raum\":\"O-108\",\"datum\":\"2026-11-05\"}",
+    "name": "raum_buchen"
+  },
+  "type": "function",
+  "index": 0
+},
+```
+
+→ Alles außer Datum stimmen, die Probleme mit dem Datum sind allerdings die Bekannten, und bereits früher im Chat falsch gewesen. Die Bestätigung ist soweit sinnvoll.
+
+#### 4-2-2
+
+```
+Es tut mir leid, aber die Person hat diese Aktion nicht bestätigt. Ich kann den Raum nicht für dich buchen.
+```
+
+→ Es entschuldigt sich und führt es nicht aus.
+
+#### 4-2-3
+
+```
+Sitzung kim wartet auf keine Bestätigung (Status: fertig).
+```
+
+→ In der Sitzung ist kein offener Tool-Call gespeichert, also passiert nichts. Wenn ein Fehler während, bzw. direkt nach dem Tool-Call auftritt, kann wie oben beschrieben eine destruktive Operation durchlaufen, ohne, dass der erfolgreiche Aufruf gespeichert wurde und damit würde es nochmal ausgeführt werden. Damit dabei kein Schaden angerichtet wird muss das Tool idempotent sein.
+
+#### 4-2-4
+
+- Zwischen der Frage und der Antwort kann sehr viel Zeit liegen, während der die blockierende Variante durchgehend aktiv sein müsste, und damit Ressourcen unnötig verschwenden würde.
+- Jede Instanz des Agents wäre gebunden an eine bestimmte Session und es kann nicht zwischen Replicas nach Bedarf umhergeschaltet werden.
+
