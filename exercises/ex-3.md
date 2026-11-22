@@ -313,3 +313,46 @@ Beide Modelle lassen sich davon nicht austricksen und beantworten einfach nur di
 
 Neben der `memory.json` datei müssten auch alle Sessions der Person gelöscht werden.
 
+### 4-4
+
+#### 4-4-1
+
+```
+Modell: llama3.2:3b · 13 Aufgaben
+
+Variante                  Antwort  Werkz.  ungültig  Fehler  Abbruch  Aufrufe Ø  Modell Ø  Tokens Ø  Dauer Ø
+agent.v1.yaml               2/13    9/13          0       5        0        0.8       1.8      1220     9.3s
+supervisor                  1/13   10/13          0       6        0        1.3       3.2      1285    11.0s
+
+Richtige Antworten nach Typ:
+Variante                       datum      direkt      wissen mehrschritt  schreibend        ohne       fehlt
+agent.v1.yaml                    1/4         1/1         0/4         0/1         0/1         0/1         0/1
+supervisor                       0/4         1/1         0/4         0/1         0/1         0/1         0/1
+```
+
+```
+Modell: qwen2.5:3b · 13 Aufgaben
+
+Variante                  Antwort  Werkz.  ungültig  Fehler  Abbruch  Aufrufe Ø  Modell Ø  Tokens Ø  Dauer Ø
+agent.v1.yaml               5/13    8/13          0       0        0        0.6       1.6      1647     4.5s
+supervisor                  3/13    9/13          0       2        0        1.1       2.8      1493     9.2s
+
+Richtige Antworten nach Typ:
+Variante                       datum      direkt      wissen mehrschritt  schreibend        ohne       fehlt
+agent.v1.yaml                    2/4         1/1         0/4         0/1         1/1         0/1         1/1
+supervisor                       1/4         1/1         0/4         1/1         0/1         0/1         0/1
+```
+
+→ Der Supervisor scheint tendenziell etwas günstiger in tokens, auch wenn er mehr Modellaufrufe durchführt. Trotzdem ist der Effekt nicht signifikant, während die Dauer auffällig steigt und die Antworten des Supervisors öfter falsch sind.
+
+#### 4-4-2
+
+**Planung:** „Klausur krank“ (`llama3.2:3b`) → verwendet unnötigerweise zusätzlich `raum_agent` und `mensa_agent`
+
+**Übergabe:** "Klausur krank" (`llama3.2:3b`), `wissen_agent` erhält „Wo kann ich mich aufhalten, wenn ich krank bin?“, was nicht viel mit der Originalfrage zu tun hat.
+
+**Spezialist:** „O-108 am Donnerstag“ (`qwen2.5:3b`), Auftrag wird wörtlich übernommen, aber Spezialist wählt `datum='2023-11-10'`
+
+#### 4-4-3
+
+Um einen eventuell faireren Vergleich zu machen müsste der Agent prompt mit den gleichen Regeln ausgestattet und getestet werden. Allerdings kann das auch durch das limitiertere Kontextfenster zu Verschlechterungen führen, was wiederum unfair wäre, da gerade die Stärke des Supervisors in detaillierteren Prompts liegen kann. Wirklich 1:1 vergleichen ist schwierig, am Ende müsste man beide Typen so weit optimieren, wie möglich und dann die besten Ergebnisse vergleichen.
