@@ -125,6 +125,19 @@ agent.v2.yaml                    2/4         1/1         0/4         0/1        
 workflow                         2/4         0/1         1/4         0/1         0/1         1/1         1/1
 ```
 
+```
+Variante                  Antwort  Werkz.  ungültig  Fehler  Abbruch  Aufrufe Ø  Modell Ø  Tokens Ø  Dauer Ø
+agent.v1.yaml               5/13    8/13          0       0        0        0.6       1.6      1647     3.4s
+agent.v2.yaml               4/13    8/13          0       1        0        0.5       1.5      1949     3.8s
+workflow                    3/13    8/13          0       0        0        0.8       2.0       436     3.1s
+
+Richtige Antworten nach Typ:
+Variante                       datum      direkt      wissen mehrschritt  schreibend        ohne       fehlt
+agent.v1.yaml                    2/4         1/1         0/4         0/1         1/1         0/1         1/1
+agent.v2.yaml                    2/4         1/1         0/4         0/1         0/1         0/1         1/1
+workflow                         1/4         1/1         0/4         0/1         0/1         0/1         1/1
+```
+
 Mit MCP Fehlertoleranz:
 
 ```
@@ -159,6 +172,7 @@ workflow                         1/4         1/1         0/4         0/1        
 
 **Erkenntnisse:**
 
-- Verbesserungen beim Prompt scheinen die Fehler etwas auszugleichen, allerdings reicht bereits der längere Docstring in dem MCP mit Fehlertoleranz aus, um die Vorteile wieder zu verlieren. 
-- MCP Fehlertoleranz erzielt immerhin eine Verbesserung bei der Workflow Lösung.
-- 
+- Verbesserungen beim Prompt scheinen die Fehler bei `llama3.2:3b` etwas auszugleichen, allerdings reicht bereits der längere Docstring in dem MCP mit Fehlertoleranz aus, um die Vorteile wieder zu verlieren. `qwen2.5:3b` hingegen schaden Sie eher.
+- MCP Fehlertoleranz erzielt bei `llama3.2:3b` nur eine leichte Verbesserung bei der Workflow Lösung, `qwen2.5:3b` profitiert bei beiden Agent Prompts. 
+- Der Workflow kann gut sagen, wenn ihm das Wissen fehlt, und beantwortet Fragen, die im Vorhinein erwartet wurden, und einen klaren Ablauf haben am besten. Das kann aber auch dazu führen, dass Fragen, auf die er eine Antwort hat, die allerdings keinen weiteren Kontext benötigt (wie zb. "Wie viel ist 17 mal 23?") abgelehnt werden, da die Information über den Mangel an Kontext überwiegt. Außerdem können Nuancen verloren gehen, da durch die strikte Kategorisierung am Anfang falsche Tool-Aufrufe gemacht werden, obwohl das Modell alles richtig eingeschätzt hat ("Hat die Mensa am Samstag offen?" → ruft `mensa_speiseplan` auf, da es als `mensa` kategorisiert wurde, obwohl die Antwort da nicht zu finden ist).
+- Insgesamt scheint `llama3.2:3b` aber vom strikten Workflow zu profitieren, `qwen2.5:3b` schadet er eher.
