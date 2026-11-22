@@ -81,8 +81,6 @@ def heute() -> str:
     return f"Heute ist {WOCHENTAGE[tag.weekday()]}, der {tag.isoformat()}."
 
 
-# TODO 2: ein eigenes Werkzeug tage_bis(datum)
-#
 # Sprachmodelle rechnen schlecht mit Datumsangaben. Schreibt eine Funktion
 # tage_bis(datum: str) -> str, die zurückgibt, wie viele Tage von heute
 # (siehe heute(), also auch HEUTE aus .env beachten) bis zu einem Datum im
@@ -93,6 +91,22 @@ def heute() -> str:
 # Tragt das Werkzeug danach in LOKALE_WERKZEUGE ein, mit Beschreibung und
 # JSON-Schema. Testet es mit:
 #   docker compose run --rm app agent.py "Wie viele Tage habe ich noch, bis die Prüfungsanmeldung endet?"
+
+def tage_bis(datum: str) -> str:
+    try:
+        zieldatum = date.fromisoformat(datum)
+    except ValueError:
+        return f"Fehler: '{datum}' ist kein gültiges Datum im Format JJJJ-MM-TT."
+
+    tag = date.fromisoformat(os.environ["HEUTE"]) if os.environ.get("HEUTE") else date.today()
+    differenz = (zieldatum - tag).days
+
+    if differenz > 0:
+        return f"Es sind {differenz} Tage bis zum {datum}."
+    elif differenz < 0:
+        return f"Das Datum {datum} liegt in der Vergangenheit, vor {abs(differenz)} Tagen."
+    else:
+        return f"Heute ist der {datum}."
 
 
 LOKALE_WERKZEUGE = [
@@ -130,6 +144,18 @@ LOKALE_WERKZEUGE = [
         parameter={"type": "object", "properties": {}},
         funktion=heute,
     ),
+    Werkzeug(
+        name="tage_bis",
+        beschreibung="Gibt die Anzahl Tage von heute bis zum angegebenen Datum zurück.",
+        parameter={
+            "type": "object",
+            "properties": {
+                "datum": {"type": "string", "description": "Datum im Format JJJJ-MM-TT"},
+            },
+            "required": ["datum"],
+        },
+        funktion=tage_bis,
+    )
 ]
 
 

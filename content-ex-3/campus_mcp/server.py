@@ -77,8 +77,6 @@ def raum_frei(raum: str, datum: str) -> str:
             f"Belegt: {', '.join(f'{s} ({g})' for s, g in sorted(belegt.items())) or 'nichts'}.")
 
 
-# TODO 3a: Werkzeug raum_buchen
-#
 # Schreibt ein Werkzeug raum_buchen(raum, datum, uhrzeit, name), das einen
 # freien Slot für eine Person bucht und in `buchungen` einträgt.
 #  - Prüft wie raum_frei, ob Raum und Datum gültig sind.
@@ -88,6 +86,43 @@ def raum_frei(raum: str, datum: str) -> str:
 # Fehler gebt ihr als Text zurück, der mit "Fehler:" beginnt, statt eine
 # Exception zu werfen. Das Modell liest den Text und kann sich korrigieren.
 # Der Docstring ist die Beschreibung, die das Modell sieht. Schreibt ihn sorgfältig.
+
+@mcp.tool()
+def raum_buchen(raum: str, datum: str, uhrzeit: str, name: str):
+    """Bucht einen freien Slot in einem Raum für eine Person.
+
+    raum: Raumnummer wie O-108 (Gebäude, Bindestrich, Nummer)
+    datum: Datum im Format JJJJ-MM-TT, zum Beispiel 2026-11-05
+    uhrzeit: Uhrzeit des Slots, einer von ['08:00', '09:45', '11:30', '14:00', '15:45', '17:30']
+    name: Name der Person, die den Raum bucht
+
+    Gibt eine Bestätigung zurück oder eine Fehlermeldung, die mit "Fehler:" beginnt.
+    """
+    raum = raum.strip().upper()
+    if raum not in BELEGUNG["raeume"]:
+        return f"Fehler: Raum {raum} gibt es nicht oder er ist nicht buchbar. Nutze raeume_auflisten."
+
+    try:
+        tag = _wochentag(datum)
+    except ValueError:
+        return f"Fehler: '{datum}' ist kein Datum im Format JJJJ-MM-TT."
+
+    if tag in ("samstag", "sonntag"):
+        return f"Fehler: {raum} ist am {tag} geschlossen."
+
+    if uhrzeit not in SLOTS:
+        return f"Fehler: '{uhrzeit}' ist keine gültige Uhrzeit. Gültige Slots sind: {', '.join(SLOTS)}."
+
+    belegt = _belegt(raum, datum)
+
+    if uhrzeit in belegt:
+        frei = [s for s in SLOTS if s not in belegt]
+        return (f"Fehler: {raum} ist am {datum} um {uhrzeit} belegt ({belegt[uhrzeit]}). "
+                f"Frei sind nur: {', '.join(frei) or 'keine Slots'}.")
+
+    buchungen[(raum, datum, uhrzeit)] = name
+
+    return f"{raum} wurde am {datum} um {uhrzeit} erfolgreich für {name} gebucht."
 
 
 @mcp.tool()
