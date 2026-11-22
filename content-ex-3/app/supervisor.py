@@ -61,9 +61,9 @@ def zaehlen(gesamt: Ergebnis, antwort) -> None:
     gesamt.ausgabe_tokens += antwort.usage.completion_tokens
 
 
-def planen(aufgabe: str, gesamt: Ergebnis) -> Plan:
+def planen(aufgabe: str, gesamt: Ergebnis, prompt_pfad: str = SUPERVISOR_PROMPT) -> Plan:
     """Schritt 1: der Supervisor entscheidet, wer was macht."""
-    prompt = lade(SUPERVISOR_PROMPT)
+    prompt = lade(prompt_pfad)
     antwort = client.chat.completions.create(
         model=MODEL, temperature=prompt.temperature, messages=prompt.nachrichten(aufgabe),
         max_tokens=300, response_format=schema_von(Plan))
@@ -108,10 +108,11 @@ def zusammenfassen(aufgabe: str, teilantworten: list[tuple[str, str]], gesamt: E
     return (antwort.choices[0].message.content or "").strip()
 
 
-def supervisor(aufgabe: str, werkzeuge: list[Werkzeug], bestaetigen=fragen, zeigen: bool = False) -> Ergebnis:
+def supervisor(aufgabe: str, werkzeuge: list[Werkzeug], bestaetigen=fragen, zeigen: bool = False,
+               prompt_pfad: str = SUPERVISOR_PROMPT) -> Ergebnis:
     gesamt = Ergebnis(antwort="")
     start = time.perf_counter()
-    plan = planen(aufgabe, gesamt)
+    plan = planen(aufgabe, gesamt, prompt_pfad)
     if zeigen:
         for a in plan.auftraege:
             print(f"  ⇒ {a.spezialist}_agent: {a.auftrag}")
@@ -146,8 +147,9 @@ def supervisor(aufgabe: str, werkzeuge: list[Werkzeug], bestaetigen=fragen, zeig
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Supervisor mit drei Spezialisten")
     parser.add_argument("aufgabe", nargs="?", default="Was gibt es heute in der Mensa?")
+    parser.add_argument("--prompt", default=SUPERVISOR_PROMPT)
     args = parser.parse_args()
-    e = supervisor(args.aufgabe, alle_werkzeuge(), zeigen=True)
+    e = supervisor(args.aufgabe, alle_werkzeuge(), zeigen=True, prompt_pfad=args.prompt)
     print(f"\n{e.antwort}\n")
     print(f"  {len(e.schritte)} Werkzeugaufrufe · {e.modellaufrufe} Modellaufrufe · "
           f"{e.eingabe_tokens} Eingabe-Tokens · {e.sekunden:.1f} s · {MODEL}")

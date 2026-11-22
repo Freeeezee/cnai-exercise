@@ -58,9 +58,10 @@ def ausfuehren(variante: str, aufgabe: str, werkzeuge) -> Ergebnis:
     if variante == "workflow":
         from workflow import workflow
         return workflow(aufgabe, werkzeuge)
-    if variante == "supervisor":
-        from supervisor import supervisor
-        return supervisor(aufgabe, werkzeuge, bestaetigen=lambda *_: True)
+    if variante == "supervisor" or variante.startswith("prompts/supervisor."):
+        from supervisor import SUPERVISOR_PROMPT, supervisor
+        pfad = SUPERVISOR_PROMPT if variante == "supervisor" else variante
+        return supervisor(aufgabe, werkzeuge, bestaetigen=lambda *_: True, prompt_pfad=pfad)
     return agent(aufgabe, werkzeuge, lade(variante), bestaetigen=lambda *_: True)
 
 

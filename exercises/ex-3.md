@@ -356,3 +356,49 @@ supervisor                       1/4         1/1         0/4         1/1        
 #### 4-4-3
 
 Um einen eventuell faireren Vergleich zu machen müsste der Agent prompt mit den gleichen Regeln ausgestattet und getestet werden. Allerdings kann das auch durch das limitiertere Kontextfenster zu Verschlechterungen führen, was wiederum unfair wäre, da gerade die Stärke des Supervisors in detaillierteren Prompts liegen kann. Wirklich 1:1 vergleichen ist schwierig, am Ende müsste man beide Typen so weit optimieren, wie möglich und dann die besten Ergebnisse vergleichen.
+
+#### 4-4-4
+
+```
+Modell: llama3.2:3b · 13 Aufgaben
+
+Variante                  Antwort  Werkz.  ungültig  Fehler  Abbruch  Aufrufe Ø  Modell Ø  Tokens Ø  Dauer Ø
+supervisor                  1/13   10/13          0       6        0        1.3       3.2      1285    16.1s
+supervisor.v2.yaml          6/13   12/13          0       2        0        1.0       2.8      1440     8.8s
+
+Richtige Antworten nach Typ:
+Variante                       datum      direkt      wissen mehrschritt  schreibend        ohne       fehlt
+supervisor                       0/4         1/1         0/4         0/1         0/1         0/1         0/1
+supervisor.v2.yaml               2/4         1/1         1/4         0/1         0/1         1/1         1/1
+```
+
+→ Der System-Prompt hat jetzt einige Beispiele für Aufträge, die der Supervisor verteilt. Damit steigt die Trefferquote massiv, und die Dauer halbiert sich ebenfalls fast.
+
+## 5
+
+***Ein Kommilitone sagt: „Mit LangGraph hätte ich mir Teil 4 gespart.“ Was hätte euch ein Framework abgenommen, und was hättet ihr dafür bezahlt? Würdet ihr für diesen Assistenten eines nehmen?***
+
+Das stimmt erstmal, mit einem Framework erreicht man sehr schnell vorzeigbare, und auf hohem level gut nachvollziehbare Ergebnisse. Bei LLMs liegt allerdings der Teufel oft im Detail, und diese Details versuchen Frameworks so gut es geht wegzuabstrahieren. Dadurch bindet man sich an die Entscheidungen der Entwickler des Frameworks und das debugging im Kleinteiligen wird durch die Schichten von Fremdcode schwieriger. Bei einem Projekt dieser Größe ist ein eigenes "Framework" vergleichsweise schnell gebaut und flexibler, vorrausgesetzt man weiß, was man tut.
+
+***Wie gelangt ein bösartiger Fakt ins Langzeit-Memory, ohne dass die Person ihn selbst eintippt? Warum ist Memory Poisoning gefährlicher als eine Prompt Injection, die nur eine Sitzung betrifft? Nennt zwei Gegenmaßnahmen.***
+
+Blind kopierter Text, oder Text, der von einem Tool (bspw. Internet-Suche) gelesen wird kann einen Aufruf, etwas gefährliches im Memory zu speichern enthalten. Das ist dadurch gefährlicher, dass der gefährliche Prompt bei jeder Konversation erneut im Kontext steht, und dadurch entweder mehrfach ausgeführt wird, oder, falls der Angriff in der letzten Session misslungen ist, einen neuen Versuch erhält. Außerdem ist es für den Nutzer unter umständen weniger klar ersichtlich, da das Memory im Normalfall eher im Hintergrund ausgewertet wird.
+
+Dagegen helfen kann ein Judge, der die Memory-Einträge bewertet, bevor Sie gespeichert werden, und typische Prompt-Injection Schutzfunktionen wie das limitieren von Tool-Calls.
+
+***Wann lohnt sich ein Supervisor mit Spezialisten, und wann ist ein einzelner Agent besser? Begründet mit euren Zahlen aus 4.4.***
+
+Die Zahlen sind nicht ganz eindeutig, deuten aber darauf hin, dass Supervisors gut in Fällen mit vielen Tool-Calls sind. Generell liegt auch nahe, dass komplexe, aber gut strukturierte Probleme von den kleineren und besser definierteren Kontexten der Spezialisten profitieren, während allgemeinere, oder kleinere Probleme oft von einzelnen Agenten besser, und vor allem günstiger umgesetzt werden können. 
+
+***`merken` verändert etwas und läuft trotzdem ohne Bestätigung, `raum_buchen` nicht. Wo zieht ihr die Grenze, welche Werkzeuge eine Bestätigung brauchen?***
+
+Tools, die nur die Umgebung des Agent verändern (`merken`) können oft ohne Bestätigung ablaufen, da Sie für den Nutzer erstmal keine direkte Gefahr darstellen. Destruktive Tools, die außerhalb der Umgebung des Agent aktiv werden können, sollten dagegen jedes Mal überprüft werden, da der potenzielle Schaden hier direkt den Nutzer betrifft.
+
+***Das Kurzzeit-Fenster wirft alte Nachrichten einfach weg. Welche andere Strategie würdet ihr für lange Unterhaltungen wählen, und was kostet sie?***
+
+Compacting, also das Modell die bisherige Konversation zusammenfassen zu lassen, und dann mit dieser Zusammenfassung weiter zu machen. Das kostet natürlich Zeit und Tokens, sorgt aber auch dafür, dass wichtige Informationen deutlich zuverlässiger im Kontext bleiben.
+
+***Warum darf der Zustand eines Agenten nicht nur im Arbeitsspeicher des Containers liegen, wenn er als Service mit mehreren Replikas in Kubernetes läuft? Wo würdet ihr die Checkpoints dort ablegen?***
+
+Welche Replik mit der nächsten Query aufgerufen wird, entscheidet ein Load-Balancer nach Verfügbarkeit, nicht danach welche Replik zuvor geantwortet hat. Außerdem können Replikas je nach Last auf- und abgebaut werden. Stattdessen sollte der Zustand in einer Zentralisierten Datenbank oder anderweitigen Speicherlösung abgelegt sein, auf die alle Replikas zugreifen können.
+
