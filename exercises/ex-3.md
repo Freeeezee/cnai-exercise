@@ -254,3 +254,62 @@ Sitzung kim wartet auf keine Bestätigung (Status: fertig).
 - Zwischen der Frage und der Antwort kann sehr viel Zeit liegen, während der die blockierende Variante durchgehend aktiv sein müsste, und damit Ressourcen unnötig verschwenden würde.
 - Jede Instanz des Agents wäre gebunden an eine bestimmte Session und es kann nicht zwischen Replicas nach Bedarf umhergeschaltet werden.
 
+### 4-3
+
+#### 4-3-1
+
+```
+  → merken(fakt='Die Person isst vegetarisch.')
+  ← Gespeichert: Die Person isst vegetarisch.
+
+Ich habe es aufgezeichnet.
+```
+
+→ Wird in der dritten Person aufgerufen. Das ist wichtig, da die nächste Session nur diesen Satz sieht. Das Wort "ich" wäre hier zb. missverständlich, da es für das Modell nicht klar ist, wer in diesem Fall "ich" ist. Auch darf es nicht wörtlich aufgeschrieben werden, da das ebenfalls vom Kontext abhängen könnte, der dann fehlt.
+
+#### 4-3-2
+
+```
+Modell: llama3.2:3b · 6 Aufgaben · Fenster 20 Nachrichten
+
+Variante       Typ         Treffer  Werkz.  Aufrufe Σ  Tokens Σ  Dauer Σ
+mit Memory     kurzzeit      2/6     6/6           12     10672      70s
+mit Memory     langzeit      1/3     4/6           10      8890      61s
+ohne Memory    kurzzeit      1/6     6/6           12      8561      69s
+ohne Memory    langzeit      0/3     3/6           12      7493      57s
+```
+
+```
+Modell: qwen2.5:3b · 6 Aufgaben · Fenster 20 Nachrichten
+
+Variante       Typ         Treffer  Werkz.  Aufrufe Σ  Tokens Σ  Dauer Σ
+mit Memory     kurzzeit      4/6     5/6            9     12048      44s
+mit Memory     langzeit      1/3     6/6           11     13963      62s
+ohne Memory    kurzzeit      2/6     5/6            9      9805      34s
+ohne Memory    langzeit      0/3     3/6            8      8105      21s
+```
+
+→ Fragen nach einer Information die Zuvor bewusst genannt wurde (bspw. nach dem Namen) werden erst durch Memory möglich. Fragen wie die nach dem Essen in der Mensa und den Lerngruppen sind ebenfalls abhängig vom Memory, scheitern aber trotzdem an anderen Stellen und Aufrufen. Die übrigen scheitern vor allem an falschen Werten (Datum), die Memory nicht behebt.
+
+Fehlermodi mit Memory (ohne Memory kommt bei Langzeit-Aufgaben ein Werkzeugfehler dazu, da `merken` fehlt):
+
+| Aufgabe | llama3.2:3b | qwen2.5:3b |
+|---|---|---|
+| raum_von_vorhin | Falsche Werte (Freitag → `2026-11-05`), Ziel verfehlt | - |
+| mensa_folgefrage | Falsche Werte (Donnerstag → `2026-11-04`), Ineffizienz | - |
+| campuskarte | - | Falsche Reflexion (antwortet ohne zu suchen) |
+| vegetarisch | Ziel verfehlt (`merken` als Text statt Aufruf), Falsche Werte (morgen → `2026-11-05`) | Falsche Werte (morgen → `2026-11-05`), Ziel verfehlt (Fakt nicht genutzt) |
+| lerngruppe | Ziel verfehlt (`merken` als Text), Falsche Werte, Falsche Reflexion | Falsche Werte (`2023-04-14`, `name='Lerngruppe'`), Falsche Reflexion |
+
+#### 4-3-3
+
+Jeder Fakt wird direkt in den System-Prompt geschrieben und kostet damit so viele Input-Tokens wie er lang ist. Bei vielen Fakten kann das dann bei kleinen Modellen schnell den gesamten Kontext ausfüllen und sinnvolle Antworten unmöglich machen. Hier wäre dann wieder eine Vorauswahl oder eine Retrieval Lösung sinnvoll, oder ein regelmäßiges Aufräumen des Memory. 
+
+#### 4-3-4
+
+Beide Modelle lassen sich davon nicht austricksen und beantworten einfach nur die Frage nach einem freien Raum.
+
+#### 4-3-5
+
+Neben der `memory.json` datei müssten auch alle Sessions der Person gelöscht werden.
+

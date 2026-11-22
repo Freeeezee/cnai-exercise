@@ -45,8 +45,6 @@ def speichern(fakten: list[dict]) -> None:
 
 def merken(fakt: str) -> str:
     """Werkzeug: speichert einen Fakt über die Person dauerhaft."""
-    # TODO 4c: merken
-    #
     # Hängt {"fakt": fakt, "erstellt": heute_iso()} an die Liste aus laden()
     # an und speichert sie. Wie jedes Werkzeug wirft merken keine Exception,
     # sondern gibt Text zurück:
@@ -55,17 +53,34 @@ def merken(fakt: str) -> str:
     #    speichern, sondern "Schon gespeichert: ..." zurückgeben
     #  - schon MAX_FAKTEN Einträge: "Fehler: ..."
     #  - sonst: "Gespeichert: <fakt>"
-    return "Fehler: merken ist noch nicht umgesetzt (TODO 4c)."
 
+    fakt = (fakt or "").strip()
+    if not fakt:
+        return "Fehler: Der Fakt ist leer."
+    if len(fakt) > MAX_LAENGE:
+        return f"Fehler: Der Fakt ist zu lang ({len(fakt)} Zeichen, höchstens {MAX_LAENGE}). Schreibe ihn kürzer."
+
+    fakten = laden()
+    if any(eintrag["fakt"].strip().casefold() == fakt.strip().casefold() for eintrag in fakten):
+        return f"Fakt bereits gespeichert: {fakt}"
+    if len(fakten) >= MAX_FAKTEN:
+        return f"Fehler: Memory voll ({MAX_FAKTEN} Fakten). Die Person muss erst Fakten löschen."
+
+    fakten.append({"fakt": fakt, "erstellt": heute_iso()})
+    speichern(fakten)
+
+    return f"Gespeichert: {fakt}"
 
 def erinnerungen() -> str:
     """Werkzeug: gibt alle gespeicherten Fakten über die Person zurück."""
-    # TODO 4c: erinnerungen
-    #
     # Eine nummerierte Liste aller Fakten, eine Zeile pro Fakt, etwa
     # "1. Die Person isst vegetarisch. (seit 2026-11-03)". Ist das Memory
     # leer, ein Satz, der das sagt.
-    return "Fehler: erinnerungen ist noch nicht umgesetzt (TODO 4c)."
+
+    if not (fakten := laden()):
+        return "Es ist noch nichts über die Person gespeichert."
+
+    return "\n".join(f"{i}. {f['fakt']} (seit {f['erstellt']})" for i, f in enumerate(fakten, 1))
 
 
 def memory_prompt() -> str:
