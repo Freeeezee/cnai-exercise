@@ -6,11 +6,13 @@ Aufruf:
     docker compose run --rm app messen.py workflow prompts/agent.v1.yaml
     docker compose run --rm app messen.py --zeigen prompts/agent.v1.yaml
     docker compose run --rm app messen.py prompts/agent.v1.yaml supervisor
+    docker compose run --rm app messen.py prompts/agent.v1.yaml react
     docker compose run --rm app messen.py --sitzungen               # Teil 4: Memory
 
 Jede Variante ist entweder eine Prompt-Datei (dann läuft der Agent), das
 Wort "workflow" (dann läuft der feste Routing-Workflow aus workflow.py) oder
-das Wort "supervisor" (Supervisor mit Spezialisten aus supervisor.py).
+das Wort "supervisor" (Supervisor mit Spezialisten aus supervisor.py) oder
+das Wort "react" (ReAct im Textformat ohne Tool Calling aus react.py).
 
 Mit --sitzungen laufen stattdessen die Folgefragen aus aufgaben_sitzung.json
 durch den Orchestrator, einmal mit und einmal ohne Langzeit-Memory.
@@ -62,6 +64,9 @@ def ausfuehren(variante: str, aufgabe: str, werkzeuge) -> Ergebnis:
         from supervisor import SUPERVISOR_PROMPT, supervisor
         pfad = SUPERVISOR_PROMPT if variante == "supervisor" else variante
         return supervisor(aufgabe, werkzeuge, bestaetigen=lambda *_: True, prompt_pfad=pfad)
+    if variante == "react":
+        from react import react
+        return react(aufgabe, werkzeuge, bestaetigen=lambda *_: True)
     return agent(aufgabe, werkzeuge, lade(variante), bestaetigen=lambda *_: True)
 
 

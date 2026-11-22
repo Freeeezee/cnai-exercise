@@ -402,3 +402,34 @@ Compacting, also das Modell die bisherige Konversation zusammenfassen zu lassen,
 
 Welche Replik mit der nächsten Query aufgerufen wird, entscheidet ein Load-Balancer nach Verfügbarkeit, nicht danach welche Replik zuvor geantwortet hat. Außerdem können Replikas je nach Last auf- und abgebaut werden. Stattdessen sollte der Zustand in einer Zentralisierten Datenbank oder anderweitigen Speicherlösung abgelegt sein, auf die alle Replikas zugreifen können.
 
+## Z
+
+#### Z-2, Z-3
+
+```
+Modell: llama3.2:3b · 13 Aufgaben
+
+Variante                  Antwort  Werkz.  ungültig  Fehler  Abbruch  Aufrufe Ø  Modell Ø  Tokens Ø  Dauer Ø
+agent.v1.yaml               2/13    9/13          0       5        0        0.8       1.8      1220    10.2s
+react                       4/13   10/13          1       6        2        2.5       4.1      4002    11.2s
+
+Richtige Antworten nach Typ:
+Variante                       datum      direkt      wissen mehrschritt  schreibend        ohne       fehlt
+agent.v1.yaml                    1/4         1/1         0/4         0/1         0/1         0/1         0/1
+react                            2/4         1/1         0/4         0/1         0/1         1/1         0/1
+```
+
+```
+Modell: qwen2.5:3b · 13 Aufgaben
+
+Variante                  Antwort  Werkz.  ungültig  Fehler  Abbruch  Aufrufe Ø  Modell Ø  Tokens Ø  Dauer Ø
+agent.v1.yaml               5/13    8/13          0       0        0        0.6       1.6      1647     6.3s
+react                       4/13    8/13          6       2        3        2.6       3.6      3794    18.1s
+
+Richtige Antworten nach Typ:
+Variante                       datum      direkt      wissen mehrschritt  schreibend        ohne       fehlt
+agent.v1.yaml                    2/4         1/1         0/4         0/1         1/1         0/1         1/1
+react                            1/4         0/1         0/4         1/1         1/1         1/1         0/1
+```
+
+→ ReAct ist bei beiden Modellen deutlich Teurer. Bei `qwen2.5:3b` ist auch sowohl deutlich langsamer als auch weniger gut in den Antworten.  `qwen2.5:3b` scheint mit dem Format große Probleme zu haben, wodurch es immer wieder erneut versuchen muss, zu antworten. Es kommt aber dennoch recht häufig ans Ziel. `llama3.2:3b` auf der anderen Seite scheint von ReAct zu profitieren, und bessere Ergebnisse zu liefern, auch wenn die Kosten unverhältnismäßig höher sind.
