@@ -107,3 +107,58 @@ Es ist ein simpler check ob der Name des Tools mit einem bestimmten Wort beginnt
 
 ## 3
 
+### 3-1
+
+Ohne MCP Fehlertoleranz:
+```
+Modell: llama3.2:3b · 13 Aufgaben
+
+Variante                  Antwort  Werkz.  ungültig  Fehler  Abbruch  Aufrufe Ø  Modell Ø  Tokens Ø  Dauer Ø
+agent.v1.yaml               2/13    9/13          0       5        0        0.8       1.8      1220    10.2s
+agent.v2.yaml               4/13    9/13          0       1        0        1.0       1.9      1723    14.2s
+workflow                    5/13    7/13          0       3        0        0.7       2.0       447     7.0s
+
+Richtige Antworten nach Typ:
+Variante                       datum      direkt      wissen mehrschritt  schreibend        ohne       fehlt
+agent.v1.yaml                    1/4         1/1         0/4         0/1         0/1         0/1         0/1
+agent.v2.yaml                    2/4         1/1         0/4         0/1         1/1         0/1         0/1
+workflow                         2/4         0/1         1/4         0/1         0/1         1/1         1/1
+```
+
+Mit MCP Fehlertoleranz:
+
+```
+Modell: llama3.2:3b · 13 Aufgaben
+
+Variante                  Antwort  Werkz.  ungültig  Fehler  Abbruch  Aufrufe Ø  Modell Ø  Tokens Ø  Dauer Ø
+agent.v1.yaml               2/13    9/13          0       4        0        0.8       1.8      1310    19.9s
+agent.v2.yaml               2/13    8/13          0       1        0        0.9       1.9      1804    23.8s
+workflow                    6/13    7/13          0       1        0        0.7       2.0       452     6.3s
+
+Richtige Antworten nach Typ:
+Variante                       datum      direkt      wissen mehrschritt  schreibend        ohne       fehlt
+agent.v1.yaml                    1/4         1/1         0/4         0/1         0/1         0/1         0/1
+agent.v2.yaml                    1/4         1/1         0/4         0/1         0/1         0/1         0/1
+workflow                         3/4         0/1         1/4         0/1         0/1         1/1         1/1
+```
+
+```
+Modell: qwen2.5:3b · 13 Aufgaben
+
+Variante                  Antwort  Werkz.  ungültig  Fehler  Abbruch  Aufrufe Ø  Modell Ø  Tokens Ø  Dauer Ø
+agent.v1.yaml               6/13    8/13          0       1        0        0.8       1.8      1958     5.2s
+agent.v2.yaml               5/13    8/13          0       0        0        0.5       1.5      2066     4.2s
+workflow                    3/13    8/13          0       0        0        0.8       2.0       436     3.5s
+
+Richtige Antworten nach Typ:
+Variante                       datum      direkt      wissen mehrschritt  schreibend        ohne       fehlt
+agent.v1.yaml                    3/4         1/1         0/4         0/1         1/1         0/1         1/1
+agent.v2.yaml                    2/4         1/1         0/4         0/1         1/1         0/1         1/1
+workflow                         1/4         1/1         0/4         0/1         0/1         0/1         1/1
+```
+
+**Erkenntnisse:**
+
+- Verbesserungen beim Prompt scheinen die Fehler etwas auszugleichen, allerdings reicht bereits der längere Docstring in dem MCP mit Fehlertoleranz aus, um die Vorteile wieder zu verlieren. 
+- MCP Fehlertoleranz erzielt immerhin eine Verbesserung bei der Workflow Lösung.
+- 

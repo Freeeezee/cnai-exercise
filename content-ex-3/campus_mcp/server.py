@@ -11,7 +11,9 @@ Buchungen landen nur im Arbeitsspeicher und sind nach einem Neustart weg.
 """
 
 import json
-from datetime import date
+import os
+import re
+from datetime import date, timedelta
 from pathlib import Path
 
 from mcp.server.fastmcp import FastMCP
@@ -26,6 +28,9 @@ SPEISEPLAN = json.loads((HIER / "speiseplan.json").read_text(encoding="utf-8"))
 SLOTS = ["08:00", "09:45", "11:30", "14:00", "15:45", "17:30"]
 WOCHENTAGE = ["montag", "dienstag", "mittwoch", "donnerstag", "freitag", "samstag", "sonntag"]
 
+DATUM_FEHLER = ("Fehler: '{}' ist kein gültiges Datum. Erlaubt sind JJJJ-MM-TT, "
+                "'heute', 'morgen', 'übermorgen' oder ein Wochentag wie 'montag'.")
+
 # Buchungen von Studierenden: {(raum, datum, slot): name}
 buchungen: dict[tuple[str, str, str], str] = {}
 
@@ -34,6 +39,32 @@ mcp = FastMCP("campus", host="0.0.0.0", port=8000)
 
 def _wochentag(datum: str) -> str:
     return WOCHENTAGE[date.fromisoformat(datum).weekday()]
+
+
+def _datum_lesen(datum: str) -> str:
+    """Wandelt das Datum, das das Modell schickt in ein ISO-Datum um."""
+    text = datum.strip().lower()
+
+    iso = re.match(r"\d{4}-\d{2}-\d{2}", text)
+    if iso:
+        return date.fromisoformat(iso.group()).isoformat()
+
+    woerter = re.findall(r"[a-zäöüß]+", text)
+    if woerter and woerter[0] == "am":
+        woerter = woerter[1:]
+
+    wort = woerter[0] if woerter else ""
+    heute = date.fromisoformat(os.environ["HEUTE"]) if os.environ.get("HEUTE") else date.today()
+    relativ_zu_heute = {"heute": 0, "morgen": 1}
+
+    if wort in relativ_zu_heute:
+        return (heute + timedelta(days=relativ_zu_heute[wort])).isoformat()
+
+    if wort in WOCHENTAGE:
+        tage = (WOCHENTAGE.index(wort) - heute.weekday()) % 7
+        return (heute + timedelta(days=tage)).isoformat()
+
+    raise ValueError(datum)
 
 
 def _belegt(raum: str, datum: str) -> dict[str, str]:
@@ -60,15 +91,17 @@ def raum_frei(raum: str, datum: str) -> str:
     """Zeigt, in welchen Zeitfenstern ein Seminarraum an einem Tag frei ist.
 
     raum: Raumnummer wie O-108 (Gebäude, Bindestrich, Nummer)
-    datum: Datum im Format JJJJ-MM-TT, zum Beispiel 2026-11-05
+    datum: Datum im Format JJJJ-MM-TT, zum Beispiel 2026-11-05. Erlaubt sind auch
+           'heute', 'morgen' oder ein Wochentag wie 'montag'.
     """
     raum = raum.strip().upper()
     if raum not in BELEGUNG["raeume"]:
         return f"Fehler: Raum {raum} gibt es nicht oder er ist nicht buchbar. Nutze raeume_auflisten."
     try:
-        tag = _wochentag(datum)
+        datum = _datum_lesen(datum)
     except ValueError:
-        return f"Fehler: '{datum}' ist kein Datum im Format JJJJ-MM-TT."
+        return DATUM_FEHLER.format(datum)
+    tag = _wochentag(datum)
     if tag in ("samstag", "sonntag"):
         return f"{raum} ist am {tag} geschlossen."
     belegt = _belegt(raum, datum)
@@ -92,7 +125,8 @@ def raum_buchen(raum: str, datum: str, uhrzeit: str, name: str):
     """Bucht einen freien Slot in einem Raum für eine Person.
 
     raum: Raumnummer wie O-108 (Gebäude, Bindestrich, Nummer)
-    datum: Datum im Format JJJJ-MM-TT, zum Beispiel 2026-11-05
+    datum: Datum im Format JJJJ-MM-TT, zum Beispiel 2026-11-05. Erlaubt sind auch
+           'heute', 'morgen' oder ein Wochentag wie 'montag'.
     uhrzeit: Uhrzeit des Slots, einer von ['08:00', '09:45', '11:30', '14:00', '15:45', '17:30']
     name: Name der Person, die den Raum bucht
 
@@ -103,9 +137,10 @@ def raum_buchen(raum: str, datum: str, uhrzeit: str, name: str):
         return f"Fehler: Raum {raum} gibt es nicht oder er ist nicht buchbar. Nutze raeume_auflisten."
 
     try:
-        tag = _wochentag(datum)
+        datum = _datum_lesen(datum)
     except ValueError:
-        return f"Fehler: '{datum}' ist kein Datum im Format JJJJ-MM-TT."
+        return DATUM_FEHLER.format(datum)
+    tag = _wochentag(datum)
 
     if tag in ("samstag", "sonntag"):
         return f"Fehler: {raum} ist am {tag} geschlossen."
@@ -129,12 +164,14 @@ def raum_buchen(raum: str, datum: str, uhrzeit: str, name: str):
 def mensa_speiseplan(datum: str) -> str:
     """Speiseplan der Mensa (Gebäude M) für einen Tag, mit Preisen für Studierende.
 
-    datum: Datum im Format JJJJ-MM-TT, zum Beispiel 2026-11-05
+    datum: Datum im Format JJJJ-MM-TT, zum Beispiel 2026-11-05. Erlaubt sind auch
+           'heute', 'morgen' oder ein Wochentag wie 'montag'.
     """
     try:
-        tag = _wochentag(datum)
+        datum = _datum_lesen(datum)
     except ValueError:
-        return f"Fehler: '{datum}' ist kein Datum im Format JJJJ-MM-TT."
+        return DATUM_FEHLER.format(datum)
+    tag = _wochentag(datum)
     gerichte = SPEISEPLAN.get(tag)
     if not gerichte:
         return f"Am {tag} ({datum}) hat die Mensa geschlossen."
